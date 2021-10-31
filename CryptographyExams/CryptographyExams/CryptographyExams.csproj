@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Cryptosystems\Cryptosystems.csproj" />
     <ProjectReference Include="..\Cyphers\Cyphers.csproj" />
   </ItemGroup>
 
