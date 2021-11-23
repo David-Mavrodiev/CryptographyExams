@@ -1,5 +1,6 @@
 ﻿using Cryptosystems.Implementations;
 using Cryptosystems.Implementations.Contracts;
+using Cryptosystems.Utils;
 using Cyphers.Implementations;
 using Cyphers.Implementations.Contracts;
 using System;
@@ -35,7 +36,6 @@ namespace CryptographyExams
             {
                 Console.WriteLine("[Caesar Cipher] Successful...");
             }
-            Console.WriteLine();
         }
 
         /**
@@ -63,7 +63,6 @@ namespace CryptographyExams
             {
                 Console.WriteLine("[Vijiner Cipher] Successful...");
             }
-            Console.WriteLine();
         }
 
         public static void PerformElGamalCryptosystem()
@@ -99,13 +98,112 @@ namespace CryptographyExams
             }
         }
 
+        private static void PerformDiffieHellmanCryptoSystem()
+        {
+            Console.WriteLine("[Diffie-Hellman] Generate prime cyclic group...");
+
+            // This is the group info which is publicly known.
+            DiffieHellmanCyclicPrimeGroupInfo groupInfo =
+                DiffieHellmanCryptoSystem.GenerateCyclicPrimeGroupInfo();
+
+            Console.WriteLine($"[Diffie-Hellman] P = {groupInfo.P}, Alpha = {groupInfo.Alpha}...");
+
+            Console.WriteLine("[Diffie-Hellman] Run simple simulation of Alice and Bob communicating...");
+            Console.WriteLine();
+
+            // Create two parties which want to communicate "securely" using Diffie-Hellman.
+            DiffieHellmanAgent alice = new DiffieHellmanAgent("Alice", groupInfo);
+            DiffieHellmanAgent bob = new DiffieHellmanAgent("Bob", groupInfo);
+
+            // They both share theirs public keys
+            alice.Connect(bob);
+            bob.Connect(alice);
+
+            alice.AddRecord("alice-message");
+            alice.SendLastRecord(bob);
+
+            bob.AddRecord("bob-message");
+            bob.SendLastRecord(alice);
+
+            Console.WriteLine();
+            Console.WriteLine("[Diffie-Hellman] Compare the 'Alice' and 'Bob' agents records...");
+
+            if (alice.HasSameRecordsAs(bob) && bob.HasSameRecordsAs(alice))
+            {
+                Console.WriteLine($"[Diffie-Hellman] Successful! Alice and Bob have the same records as intended...");
+            }
+            else
+            {
+                Console.WriteLine($"[Diffie-Hellman] Failed! Alice and Bob have mismatch in their records...");
+            }
+        }
+
+        /**
+         * Simple Linear Forward Shif Register (LFSR) 
+         */
+        static void RunSimpleLFSR()
+        {
+            int[] s = new int[4] { 1, 1, 1, 1};
+
+            for (int step = 0; step < 20; step++)
+            {
+                Console.WriteLine(String.Join(' ', s));
+
+                int temp = s[0];
+
+                int res = 0;
+                for (int i = s.Length - 1; i >= 0; i--)
+                {
+                    res = (res + s[i]) % 2;
+                }
+                s[0] = res;
+
+                for (int i = 1; i < s.Length; i++)
+                {
+                    int copy = s[i];
+                    s[i] = temp;
+                    temp = copy;
+                }
+            }
+
+        }
+
         static void Main(string[] args)
         {
-            PerformCaesarCipher();
-            PerformVijinerCipher();
-            PerformElGamalCryptosystem();
+            int prime = 11;
 
-            // TODO Add Diffie-Hellman key exchange
+            Console.WriteLine(Math.Pow(7, prime) % prime);
+
+            for (int i = 1; i <= 30; i++)
+            {
+                Console.WriteLine(Math.Pow(4, i) % prime);
+            }
+
+            // RunSimpleLFSR();
+
+            string dashesLine = new string('-', 200);
+
+            Console.WriteLine(dashesLine);
+            PerformCaesarCipher();
+            Console.WriteLine(dashesLine);
+
+            Console.WriteLine();
+
+            Console.WriteLine(dashesLine);
+            PerformVijinerCipher();
+            Console.WriteLine(dashesLine);
+
+            Console.WriteLine();
+
+            Console.WriteLine(dashesLine);
+            PerformElGamalCryptosystem();
+            Console.WriteLine(dashesLine);
+
+            Console.WriteLine();
+
+            Console.WriteLine(dashesLine);
+            PerformDiffieHellmanCryptoSystem();
+            Console.WriteLine(dashesLine);
         }
     }
 }
