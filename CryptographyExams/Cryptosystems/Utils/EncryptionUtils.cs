@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Cryptosystems.Utils
 {
@@ -21,20 +19,86 @@ namespace Cryptosystems.Utils
             return ASCIIEncoding.ASCII.GetString(bytes);
         }
 
-        public static BigInteger ModularExponentiation(BigInteger b, BigInteger ex, BigInteger mod)
+        public static BigInteger ModularExponentiation(BigInteger @base, BigInteger exponent, BigInteger factor)
         {
-            if (mod == 1)
+            @base = @base % factor;
+            if (@base == 0)
             {
+                // @base is divisible by the factor so the mod is 0.
                 return 0;
             }
 
-            BigInteger c = 1;
-            for (BigInteger i = 0; i < ex - 1; i++)
+            BigInteger result = 1;
+            while (exponent > 0)
             {
-                c = EncryptionUtils.Mod((c * b), mod);
+                if ((exponent & 1) == 1)
+                {
+                    result = (result * @base) % factor;
+                }
+
+                exponent = exponent >> 1; // equivalent to division by 2.
+                @base = (@base * @base) % factor;
             }
 
-            return c;
+            return result;
+        }
+
+        public static BigInteger FindGeneratorOfPrimeOrder(BigInteger prime)
+        {
+            IDictionary<BigInteger, BigInteger> primeFactors = PrimeFactorization(prime - 1);
+
+            for (BigInteger generatorCandidate = prime - 1; generatorCandidate >= 2; generatorCandidate --)
+            {
+                bool isGenerator = true;
+                foreach (BigInteger factor in primeFactors.Keys)
+                {
+                    BigInteger result = ModularExponentiation(generatorCandidate, (prime - 1) / factor, prime);
+                    if (result == 1)
+                    {
+                        isGenerator = false;
+                        break;
+                    }
+                }
+
+                if (isGenerator)
+                {
+                    return generatorCandidate;
+                }
+            }
+
+            return 2;
+        }
+
+        public static bool VerifyIsGenerator(BigInteger generator, BigInteger order)
+        {
+            HashSet<BigInteger> generatedElements = new HashSet<BigInteger>();
+            for (int i = 1; i < order; i++)
+            {
+                generatedElements.Add(ModularExponentiation(generator, i, order));
+            }
+
+            return generatedElements.Count == order - 1;
+        }
+
+        public static IDictionary<BigInteger, BigInteger> PrimeFactorization(BigInteger number)
+        {
+            var primeFactorsWithCoeffs = new Dictionary<BigInteger, BigInteger>();
+
+            for (BigInteger div = 2; div <= number; div++)
+            {
+                BigInteger coeff = 0;
+                while (number % div == 0)
+                {
+                    coeff ++;
+                    number = number / div;
+                }
+                if (coeff > 0)
+                {
+                    primeFactorsWithCoeffs.Add(div, coeff);
+                }
+            }
+
+            return primeFactorsWithCoeffs;
         }
 
         public static BigInteger Mod(BigInteger x, BigInteger m)
@@ -46,7 +110,7 @@ namespace Cryptosystems.Utils
         {
             if (a < b)
             {
-                return EncryptionUtils.GCD(b, a);
+                return GCD(b, a);
             }
 
             if (a % b == 0)
@@ -54,19 +118,8 @@ namespace Cryptosystems.Utils
                 return b;
             }
 
-            return EncryptionUtils.GCD(b, a % b);
+            return GCD(b, a % b);
         }
-
-        public static BigInteger GetRandomInRange(BigInteger from, int length)
-        {
-            byte[] bytes = new byte[length];
-            new Random().NextBytes(bytes);
-            // Set sign bit positive
-            bytes[bytes.Length - 1] &= 0x7F;
-
-            return from + new BigInteger(bytes);
-        }
-
 
         /**
          * Get random prime number using the Sieve of Eratosthenes (the simplest, but the most uneffective approach of generating primes :-)).
@@ -96,10 +149,10 @@ namespace Cryptosystems.Utils
                 }
             }
 
-            int randomNumber = (int) new BigInteger(new Random().Next(2, lengthOfShieve));
-            int randomIndex = (int) EncryptionUtils.Mod(randomNumber, new BigInteger(primes.Count));
+            int randomNumber = new Random().Next(2, lengthOfShieve);
+            int randomIndex = (int) Mod(randomNumber, primes.Count);
 
-            return new BigInteger(primes[randomIndex]);
+            return primes[randomIndex];
         }
     }
 }

@@ -32,7 +32,7 @@ namespace Cryptosystems.Implementations
 
         public Tuple<ElGamalEphemeralKey, string> Encrypt(string text, ElGamalPublicKey publicKey)
         {
-            // Note: By convention, the d priv key should be chosen between 2 and P.
+            // Note: By convention, the d priv key should be chosen between 2 and P - 2.
             // However for the ease of the calculation here we take the [2, 10^6] mod from P.
             BigInteger kpriv = 2 + EncryptionUtils.Mod(publicKey.P, new Random().Next(1, (int)Math.Pow(10, 6)));
             ElGamalEphemeralKey sessionKey = new ElGamalEphemeralKey(EncryptionUtils.ModularExponentiation(publicKey.Alpha, kpriv, publicKey.P));
@@ -53,25 +53,19 @@ namespace Cryptosystems.Implementations
 
         public Tuple<ElGamalPublicKey, BigInteger> GenerateKeys()
         {
-            // Generate the Alpha number, it should be really large.
-            BigInteger alpha = EncryptionUtils.GetRandomInRange(new BigInteger(Math.Pow(10, 10)), 15);
-            Console.WriteLine("WOOw");
+            // Generate the P number, it should be prime. And in real world scenaries it should be very big.
+            BigInteger p = EncryptionUtils.GetRandomPrime();
 
-            // Then select the P. P and Alpha should be mutually prime numbers.
-            BigInteger p = 0;
-            for (BigInteger i = alpha; i >= 0; i--)
+            // Then select the Alpha. It should be a generator of a cyclic group of order P.
+            BigInteger alpha = EncryptionUtils.FindGeneratorOfPrimeOrder(p);
+
+            if (!EncryptionUtils.VerifyIsGenerator(alpha, p))
             {
-                if (EncryptionUtils.GCD(alpha, i) == 1)
-                {
-                    // p and alpha are mutually prime. (This means that there is an inverse in the ring).
-                    p = i;
-                    break;
-                }
+                throw new Exception($"Alpha = {alpha} is not a generator of a cyclic group of P = {p}.");
             }
 
-            // Note: By convention, the d (private key) should be chosen between 2 and P.
-            // However for the ease of the calculation here we take the [2, 10^6] mod from P.
-            BigInteger kpriv = 2 + EncryptionUtils.Mod(p, new Random().Next(1, (int) Math.Pow(10, 6)));
+            // The private key should be randomly chosen from [2, p - 1] range.
+            BigInteger kpriv = new Random().Next(2, (int) p - 1);
 
             // Public key is calculated as Alpha^Kpriv mod P.
             BigInteger kpub = EncryptionUtils.ModularExponentiation(alpha, kpriv, p);

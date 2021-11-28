@@ -1,6 +1,5 @@
 ﻿using Cryptosystems.Implementations;
 using Cryptosystems.Implementations.Contracts;
-using Cryptosystems.Utils;
 using Cyphers.Implementations;
 using Cyphers.Implementations.Contracts;
 using System;
@@ -170,15 +169,6 @@ namespace CryptographyExams
 
         static void Main(string[] args)
         {
-            int prime = 11;
-
-            Console.WriteLine(Math.Pow(7, prime) % prime);
-
-            for (int i = 1; i <= 30; i++)
-            {
-                Console.WriteLine(Math.Pow(4, i) % prime);
-            }
-
             // RunSimpleLFSR();
 
             string dashesLine = new string('-', 200);

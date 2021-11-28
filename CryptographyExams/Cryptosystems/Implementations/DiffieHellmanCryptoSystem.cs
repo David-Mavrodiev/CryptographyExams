@@ -13,16 +13,11 @@ namespace Cryptosystems.Implementations
         {
             DiffieHellmanCyclicPrimeGroupInfo groupInfo = new DiffieHellmanCyclicPrimeGroupInfo();
             groupInfo.P = EncryptionUtils.GetRandomPrime();
+            groupInfo.Alpha = EncryptionUtils.FindGeneratorOfPrimeOrder(groupInfo.P);
 
-            // Find a co-prime to P backwards.
-            for (BigInteger i = groupInfo.P / 2; i >= 2; i--)
+            if (!EncryptionUtils.VerifyIsGenerator(groupInfo.Alpha, groupInfo.P))
             {
-                if (EncryptionUtils.GCD(groupInfo.P, i) == 1)
-                {
-                    // Found a "generator" of the P group.
-                    groupInfo.Alpha = i;
-                    break;
-                }
+                throw new Exception($"Alpha = {groupInfo.Alpha} is not a generator of a cyclic group of P = {groupInfo.P}.");
             }
 
             return groupInfo;
@@ -32,8 +27,8 @@ namespace Cryptosystems.Implementations
         {
             DiffieHellmanKeyPair pair = new DiffieHellmanKeyPair(groupInfo);
 
-            // For the private key just get some random number.
-            pair.PrivateKey = new Random().Next(2, (int) Math.Pow(2, 12));
+            // For the private key just get some random number in [2, p - 1] range.
+            pair.PrivateKey = new Random().Next(2, (int) groupInfo.P - 1);
 
             return pair;
         }
@@ -91,12 +86,14 @@ namespace Cryptosystems.Implementations
         {
             this.name = name;
             this.keyPair = DiffieHellmanCryptoSystem.GenerateKeyPair(groupInfo);
+            Console.WriteLine($"[Diffie-Hellman-Sim](Generate) {name} generated a private key D = {this.keyPair.PrivateKey}...");
         }
 
         public void OnConnect(BigInteger publicKey)
         {
             Console.WriteLine($"[Diffie-Hellman-Sim](Connect) {name} received '{publicKey}' as public key...");
             this.sharedSecret = EncryptionUtils.ModularExponentiation(publicKey, this.keyPair.PrivateKey, this.keyPair.PrimeCyclicGroupInfo.P);
+            Console.WriteLine($"[Diffie-Hellman-Sim](Connect) {name} computes shared secret to be '{this.sharedSecret}'...");
         }
 
         public void OnReceive(string encrypted)
@@ -157,12 +154,12 @@ namespace Cryptosystems.Implementations
     public class DiffieHellmanCyclicPrimeGroupInfo
     {
         /**
-         * This is a "generator" of an cyclic prime group (additive or multiplicative) of P.
+         * This is a "generator" of an cyclic prime group (additive or multiplicative) of P order.
          */
         public BigInteger Alpha { get; set; }
 
         /**
-         * Group of prime.
+         * Order of the prime group.
          * NOTE: In all prime groups there is AT LEAST one "generator" element.
          */
         public BigInteger P { get; set; }
